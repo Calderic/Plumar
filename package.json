@@ -1,0 +1,38 @@
+{
+  "name": "plumar",
+  "version": "1.0.0",
+  "description": "轻量级 Astro 博客文章生成工具",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "plumar": "bin/plumar.js"
+  },
+  "scripts": {
+    "dev": "node bin/plumar.js",
+    "test": "node --test tests/**/*.test.js",
+    "lint": "echo 'Using built-in linting'",
+    "build": "echo 'No build step needed'"
+  },
+  "keywords": [
+    "cli",
+    "blog",
+    "astro",
+    "markdown",
+    "generator",
+    "static-site"
+  ],
+  "author": "Plumar Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "files": [
+    "bin/",
+    "src/",
+    "templates/",
+    "README.md",
+    "LICENSE"
+  ]
+} 

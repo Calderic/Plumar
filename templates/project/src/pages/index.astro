@@ -1,0 +1,37 @@
+---
+import ThemePageRenderer from '../components/ThemePageRenderer.astro';
+import { getPlumarConfig } from '../utils/config.js';
+
+const config = getPlumarConfig();
+
+// 首页数据 - 纯逻辑，不包含UI
+const pageData = {
+  title: config.title,
+  description: config.description,
+  pageType: 'home'
+};
+---
+
+<ThemePageRenderer {...pageData}>
+  <!-- 首页内容：当主题没有定义自己的首页内容时显示 -->
+  <section class="welcome">
+    <h1>欢迎来到 {config.title}</h1>
+    <p>{config.description}</p>
+  </section>
+  
+  <section class="getting-started">
+    <h2>🚀 开始使用</h2>
+    <ul>
+      <li>使用 <code>plumar new "文章标题"</code> 创建文章</li>
+      <li>使用 <code>plumar list</code> 查看所有文章</li>
+      <li>使用 <code>npm run dev</code> 启动开发服务器</li>
+    </ul>
+  </section>
+  
+  <section class="quick-links">
+    <h2>📝 快速链接</h2>
+    <ul>
+      <li><a href="/blog">查看博客文章</a></li>
+    </ul>
+  </section>
+</ThemePageRenderer> 

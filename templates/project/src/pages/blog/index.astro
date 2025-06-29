@@ -1,0 +1,61 @@
+---
+import { getCollection } from 'astro:content';
+import ThemePageRenderer from '../../components/ThemePageRenderer.astro';
+import { getPlumarConfig } from '../../utils/config.js';
+
+const config = getPlumarConfig();
+
+// 数据获取逻辑
+const posts = await getCollection('blog', ({ data }) => {
+  return data.draft !== true;
+});
+
+posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+
+// 页面数据 - 纯逻辑
+const pageData = {
+  title: `博客文章 - ${config.title}`,
+  description: `${config.title}的博客文章列表`,
+  pageType: 'blog',
+  posts: posts
+};
+---
+
+<ThemePageRenderer {...pageData}>
+  <!-- 博客列表内容：当主题没有自定义博客列表时显示 -->
+  <section class="blog-header">
+    <h1>📝 博客文章</h1>
+    <p>共 {posts.length} 篇文章</p>
+  </section>
+  
+  <section class="posts-list">
+    {posts.length === 0 ? (
+      <div class="empty-state">
+        <p>📭 还没有文章，使用 <code>plumar new "文章标题"</code> 创建第一篇文章。</p>
+      </div>
+    ) : (
+      posts.map((post) => (
+        <article class="post-preview">
+          <h2>
+            <a href={`/blog/${post.id}`}>{post.data.title}</a>
+          </h2>
+          <div class="post-meta">
+            <time>📅 {post.data.date.toLocaleDateString('zh-CN')}</time>
+            {post.data.tags.length > 0 && (
+              <div class="post-tags">
+                <span>🏷️ {post.data.tags.join(', ')}</span>
+              </div>
+            )}
+          </div>
+          {post.data.description && (
+            <p class="post-description">{post.data.description}</p>
+          )}
+        </article>
+      ))
+    )}
+  </section>
+  
+  <nav class="page-nav">
+    <a href="/">← 返回首页</a>
+  </nav>
+</ThemePageRenderer> 

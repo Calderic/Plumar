@@ -1,0 +1,73 @@
+---
+import { getPlumarConfig } from '../utils/config.js';
+import { createThemeRenderer } from '../utils/theme-renderer.js';
+import FallbackLayout from '../layouts/fallback.astro';
+
+const { pageType = 'default', ...pageData } = Astro.props;
+
+// 获取配置和主题渲染器
+const config = getPlumarConfig();
+const themeRenderer = createThemeRenderer(config);
+
+// 尝试加载主题布局
+let ThemeLayout = null;
+let layoutSource = 'fallback';
+
+// 1. 尝试加载特定页面类型的布局 (home.astro, post.astro 等)
+if (pageType !== 'default') {
+  try {
+    const layoutPath = `@theme/layouts/${pageType}.astro`;
+    const layoutModule = await import(layoutPath);
+    ThemeLayout = layoutModule.default;
+    layoutSource = `theme:${pageType}`;
+  } catch {
+    // 继续尝试其他布局
+  }
+}
+
+// 2. 尝试加载默认主题布局 (default.astro)
+if (!ThemeLayout) {
+  try {
+    const layoutPath = '@theme/layouts/default.astro';
+    const layoutModule = await import(layoutPath);
+    ThemeLayout = layoutModule.default;
+    layoutSource = 'theme:default';
+  } catch {
+    // 继续尝试其他布局
+  }
+}
+
+// 3. 使用内置 fallback 布局
+if (!ThemeLayout) {
+  ThemeLayout = FallbackLayout;
+  layoutSource = 'fallback';
+}
+
+// 准备传递给布局的数据
+const layoutProps = {
+  ...pageData,
+  pageType,
+  language: config.language || 'zh-CN'
+};
+
+// 开发模式下显示调试信息
+const isDev = import.meta.env.DEV;
+if (isDev) {
+  console.log(`🎨 [ThemePageRenderer] 页面类型: ${pageType}, 布局来源: ${layoutSource}`);
+}
+---
+
+<!-- 开发模式下的调试注释 -->
+{isDev && (
+  <!-- 
+  Plumar Theme Debug Info:
+  - Page Type: {pageType}
+  - Layout Source: {layoutSource}
+  - Theme: {config.theme || 'none'}
+  - Config: {JSON.stringify(config, null, 2)}
+  -->
+)}
+
+<ThemeLayout {...layoutProps}>
+  <slot />
+</ThemeLayout> 

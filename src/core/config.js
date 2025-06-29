@@ -43,7 +43,8 @@ export class ConfigManager {
       pagination_dir: 'page',
 
       // 扩展配置 - 参考 Hexo Extensions 配置
-      theme: '',
+      theme: '2025Plumar',
+      theme_config: {},
       deploy: {}
     };
   }

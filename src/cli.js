@@ -6,6 +6,7 @@ import { ConfigCommand } from './commands/config.js';
 import { StatsCommand } from './commands/stats.js';
 import { ServerCommand } from './commands/server.js';
 import { BuildCommand } from './commands/build.js';
+import { ThemeCommand } from './commands/theme.js';
 
 export class CLI {
   constructor(version) {
@@ -19,6 +20,7 @@ export class CLI {
       ['stats', new StatsCommand()],
       ['server', new ServerCommand()],
       ['build', new BuildCommand()],
+      ['theme', new ThemeCommand()],
     ]);
   }
 
@@ -68,6 +70,7 @@ export class CLI {
   stats                 文章统计
   server                启动开发服务器
   build                 构建静态站点
+  theme                 主题管理
 
 选项:
   -h, --help           显示帮助信息

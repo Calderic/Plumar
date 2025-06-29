@@ -1,10 +1,14 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { ThemeManager } from './theme.js';
+import { LayoutEngine } from './layout.js';
 
 export class TemplateEngine {
   constructor(config) {
     this.config = config;
     this.templateCache = new Map();
+    this.themeManager = new ThemeManager(config);
+    this.layoutEngine = new LayoutEngine(config, this.themeManager);
   }
 
   async getTemplate(type) {
@@ -25,19 +29,54 @@ export class TemplateEngine {
   }
 
   resolveTemplatePath(type) {
-    // 优先使用用户自定义模板
+    // 1. 优先使用用户自定义模板
     const userTemplate = join('./templates', `${type}.md`);
     if (existsSync(userTemplate)) {
       return userTemplate;
     }
 
-    // 使用默认模板 - 如果没有用户模板，使用内置模板
+    // 2. 尝试使用当前主题的模板
+    const currentTheme = this.config.theme || '2025Plumar';
+    const themeTemplatePath = join('./themes', currentTheme, 'templates', `${type}.md`);
+    if (existsSync(themeTemplatePath)) {
+      return themeTemplatePath;
+    }
+
+    // 3. 使用默认模板 - 如果没有用户模板和主题模板，使用内置模板
     const defaultTemplate = join('./templates', `${type}.md`);
     return defaultTemplate;
   }
 
+  // 渲染主题布局
+  async renderLayout(layoutName, data = {}) {
+    try {
+      return this.layoutEngine.getLayout(layoutName, data);
+    } catch (error) {
+      console.warn(`⚠️  渲染布局失败: ${error.message}`);
+      return null;
+    }
+  }
+
+  // 获取主题组件
+  getThemeComponent(componentName) {
+    try {
+      return this.layoutEngine.getComponent(componentName);
+    } catch (error) {
+      console.warn(`⚠️  获取组件失败: ${error.message}`);
+      return null;
+    }
+  }
+
+  // 获取主题配置
+  getThemeConfig() {
+    return this.themeManager.getThemeConfig();
+  }
+
+
+
   clearCache() {
     this.templateCache.clear();
+    this.layoutEngine.clearCache();
   }
 
   listTemplates() {

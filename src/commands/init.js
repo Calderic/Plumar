@@ -109,7 +109,8 @@ per_page: 10
 pagination_dir: "page"
 
 # 扩展配置
-theme: ""
+theme: "2025Plumar"
+theme_config: {}
 deploy: {}
 `;
 
@@ -351,29 +352,92 @@ export function getPlumarConfig() {
 }`;
     writeFileSync(join(configUtilsPath, 'config.js'), configUtils, 'utf8');
 
-    // astro.config.mjs - 更新为 Astro v5 配置，动态读取站点 URL
+    // astro.config.mjs - 更新为 Astro v5 配置，集成主题系统
     const astroConfig = `import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 
-// 读取 Plumar 配置中的站点 URL
-function getSiteUrl() {
+// 读取 Plumar 配置
+function getPlumarConfig() {
   try {
     const yamlContent = readFileSync('./plumar.config.yml', 'utf8');
-    const match = yamlContent.match(/url:\\s*["']([^"']+)["']/);
-    return match ? match[1] : 'https://your-site.com';
+    const lines = yamlContent.split('\\n');
+    const config = {};
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && trimmed.includes(':') && !trimmed.startsWith('#')) {
+        const [key, ...valueParts] = trimmed.split(':');
+        const value = valueParts.join(':').trim().replace(/['"]/g, '');
+        config[key.trim()] = value;
+      }
+    }
+    
+    return config;
   } catch {
-    return 'https://your-site.com';
+    return { url: 'https://your-site.com', theme: '2025Plumar' };
   }
 }
 
+// 主题集成插件
+function plumarTheme() {
+  const config = getPlumarConfig();
+  const currentTheme = config.theme || '2025Plumar';
+  
+  return {
+    name: 'plumar-theme',
+    hooks: {
+      'astro:config:setup': ({ config: astroConfig, addWatchFile }) => {
+        // 监听主题文件变化
+        const themePath = join(process.cwd(), 'themes', currentTheme);
+        if (existsSync(themePath)) {
+          addWatchFile(join(themePath, '**/*'));
+        }
+        
+        // 添加主题别名
+        astroConfig.vite.resolve = astroConfig.vite.resolve || {};
+        astroConfig.vite.resolve.alias = astroConfig.vite.resolve.alias || {};
+        
+        // 设置主题组件别名
+        const themeComponentsPath = join(themePath, 'components');
+        if (existsSync(themeComponentsPath)) {
+          astroConfig.vite.resolve.alias['@theme/components'] = themeComponentsPath;
+        }
+        
+        // 设置主题布局别名
+        const themeLayoutsPath = join(themePath, 'layouts');
+        if (existsSync(themeLayoutsPath)) {
+          astroConfig.vite.resolve.alias['@theme/layouts'] = themeLayoutsPath;
+        }
+        
+        // 设置主题样式
+        const themeStylesPath = join(themePath, 'styles');
+        if (existsSync(themeStylesPath)) {
+          astroConfig.vite.resolve.alias['@theme/styles'] = themeStylesPath;
+        }
+      }
+    }
+  };
+}
+
+const config = getPlumarConfig();
+
 export default defineConfig({
-  site: getSiteUrl(),
-  integrations: [mdx()],
+  site: config.url || 'https://your-site.com',
+  integrations: [mdx(), plumarTheme()],
   markdown: {
     shikiConfig: {
       theme: 'github-light',
       wrap: true
+    }
+  },
+  vite: {
+    resolve: {
+      alias: {
+        '@': join(process.cwd(), 'src'),
+        '@theme': join(process.cwd(), 'themes', config.theme || '2025Plumar')
+      }
     }
   }
 });`;
@@ -387,24 +451,35 @@ export default defineConfig({
     };
     writeFileSync(join(sitePath, 'tsconfig.json'), JSON.stringify(tsConfig, null, 2), 'utf8');
 
-    // 主页面 - 动态读取配置
+    // 主页面 - 使用主题布局
     const indexPage = `---
 import { getPlumarConfig } from '../utils/config.js';
+import { existsSync } from 'fs';
+import { join } from 'path';
 
 const config = getPlumarConfig();
+const currentTheme = config.theme || '2025Plumar';
+
+// 尝试导入主题布局
+let DefaultLayout;
+try {
+  const themeLayoutPath = \`@theme/layouts/default.astro\`;
+  DefaultLayout = (await import(themeLayoutPath)).default;
+} catch {
+  // 如果主题布局不存在，使用内置布局
+  DefaultLayout = null;
+}
+
+const pageData = {
+  title: config.title,
+  description: config.description,
+  author: config.author,
+  language: config.language || 'zh-CN'
+};
 ---
 
-<html lang={config.language || 'zh-CN'}>
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="generator" content={Astro.generator} />
-    <title>{config.title}</title>
-    <meta name="description" content={config.description} />
-    {config.author && <meta name="author" content={config.author} />}
-  </head>
-  <body>
+{DefaultLayout ? (
+  <DefaultLayout {...pageData}>
     <main>
       <h1>欢迎来到 {config.title}</h1>
       <p>{config.description}</p>
@@ -421,11 +496,51 @@ const config = getPlumarConfig();
         <li><a href="/blog">查看博客文章</a></li>
       </ul>
     </main>
-  </body>
-</html>`;
+  </DefaultLayout>
+) : (
+  <!-- 内置默认布局 -->
+  <html lang={config.language || 'zh-CN'}>
+    <head>
+      <meta charset="utf-8" />
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      <meta name="viewport" content="width=device-width" />
+      <meta name="generator" content={Astro.generator} />
+      <title>{config.title}</title>
+      <meta name="description" content={config.description} />
+      {config.author && <meta name="author" content={config.author} />}
+      <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; }
+        h1 { color: #333; } h2 { color: #666; } code { background: #f5f5f5; padding: 0.2rem; }
+      </style>
+    </head>
+    <body>
+      <main>
+        <h1>欢迎来到 {config.title}</h1>
+        <p>{config.description}</p>
+        
+        <div style="background: #fff3cd; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
+          <p><strong>注意:</strong> 当前主题 "{currentTheme}" 未找到，正在使用内置默认样式。</p>
+          <p>请使用 <code>plumar theme create {currentTheme}</code> 创建主题，或使用 <code>plumar theme list</code> 查看可用主题。</p>
+        </div>
+        
+        <h2>开始使用</h2>
+        <ul>
+          <li>使用 <code>plumar new "文章标题"</code> 创建文章</li>
+          <li>使用 <code>plumar list</code> 查看所有文章</li>
+          <li>使用 <code>npm run dev</code> 启动开发服务器</li>
+        </ul>
+        
+        <h2>链接</h2>
+        <ul>
+          <li><a href="/blog">查看博客文章</a></li>
+        </ul>
+      </main>
+    </body>
+  </html>
+)}`;
     writeFileSync(join(sitePath, 'src/pages/index.astro'), indexPage, 'utf8');
 
-    // 博客列表页面 - 使用新的 Content Layer API 并动态读取配置
+    // 博客列表页面 - 使用主题布局
     const blogIndexPage = `---
 import { getCollection } from 'astro:content';
 import { getPlumarConfig } from '../../utils/config.js';
@@ -436,16 +551,24 @@ const posts = await getCollection('blog', ({ data }) => {
 });
 
 posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+
+// 尝试导入主题布局
+let DefaultLayout;
+try {
+  DefaultLayout = (await import('@theme/layouts/default.astro')).default;
+} catch {
+  DefaultLayout = null;
+}
+
+const pageData = {
+  title: \`博客文章 - \${config.title}\`,
+  description: \`\${config.title}的博客文章列表\`,
+  language: config.language || 'zh-CN'
+};
 ---
 
-<html lang={config.language || 'zh-CN'}>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>博客文章 - {config.title}</title>
-    <meta name="description" content={\`\${config.title}的博客文章列表\`} />
-  </head>
-  <body>
+{DefaultLayout ? (
+  <DefaultLayout {...pageData}>
     <main>
       <h1>博客文章</h1>
       
@@ -470,13 +593,54 @@ posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).get
       
       <p><a href="/">← 返回首页</a></p>
     </main>
-  </body>
-</html>`;
+  </DefaultLayout>
+) : (
+  <!-- 内置默认布局 -->
+  <html lang={config.language || 'zh-CN'}>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width" />
+      <title>博客文章 - {config.title}</title>
+      <meta name="description" content={\`\${config.title}的博客文章列表\`} />
+      <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; }
+        h1, h2 { color: #333; } a { color: #0066cc; text-decoration: none; }
+        a:hover { text-decoration: underline; } code { background: #f5f5f5; padding: 0.2rem; }
+      </style>
+    </head>
+    <body>
+      <main>
+        <h1>博客文章</h1>
+        
+        {posts.length === 0 ? (
+          <p>还没有文章，使用 <code>plumar new "文章标题"</code> 创建第一篇文章。</p>
+        ) : (
+          posts.map((post) => (
+            <article style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee;">
+              <h2>
+                <a href={\`/blog/\${post.id}\`}>{post.data.title}</a>
+              </h2>
+              <p style="color: #666;">发布时间: {post.data.date.toLocaleDateString('zh-CN')}</p>
+              {post.data.description && <p>{post.data.description}</p>}
+              {post.data.tags.length > 0 && (
+                <p style="font-size: 0.9rem;">
+                  <strong>标签:</strong> {post.data.tags.join(', ')}
+                </p>
+              )}
+            </article>
+          ))
+        )}
+        
+        <p><a href="/">← 返回首页</a></p>
+      </main>
+    </body>
+  </html>
+)}`;
     // 确保目录存在
     mkdirSync(join(sitePath, 'src/pages/blog'), { recursive: true });
     writeFileSync(join(sitePath, 'src/pages/blog/index.astro'), blogIndexPage, 'utf8');
 
-    // 文章详情页面 - 使用新的 render() 函数并动态读取配置
+    // 文章详情页面 - 使用主题布局
     const postDetailPage = `---
 import { getCollection, render } from 'astro:content';
 import { getPlumarConfig } from '../../utils/config.js';
@@ -493,38 +657,95 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await render(post);
+
+// 尝试导入主题文章布局，如果没有则使用默认布局
+let PostLayout;
+let DefaultLayout;
+try {
+  PostLayout = (await import('@theme/layouts/post.astro')).default;
+} catch {
+  try {
+    DefaultLayout = (await import('@theme/layouts/default.astro')).default;
+  } catch {
+    PostLayout = null;
+    DefaultLayout = null;
+  }
+}
+
+const Layout = PostLayout || DefaultLayout;
+
+const pageData = {
+  title: \`\${post.data.title} - \${config.title}\`,
+  description: post.data.description,
+  author: config.author,
+  language: config.language || 'zh-CN',
+  // 文章特定数据
+  post: post.data,
+  content: Content
+};
 ---
 
-<html lang={config.language || 'zh-CN'}>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>{post.data.title} - {config.title}</title>
-    {post.data.description && <meta name="description" content={post.data.description} />}
-    {config.author && <meta name="author" content={config.author} />}
-  </head>
-  <body>
-    <main>
-      <article>
-        <h1>{post.data.title}</h1>
-        <p style="color: #666;">发布时间: {post.data.date.toLocaleDateString('zh-CN')}</p>
-        {post.data.tags.length > 0 && (
-          <p style="font-size: 0.9rem;">
-            <strong>标签:</strong> {post.data.tags.join(', ')}
-          </p>
-        )}
-        <hr style="margin: 2rem 0;" />
-        <Content />
-      </article>
-      
+{Layout ? (
+  <Layout {...pageData}>
+    <article>
+      <h1>{post.data.title}</h1>
+      <p style="color: #666;">发布时间: {post.data.date.toLocaleDateString('zh-CN')}</p>
+      {post.data.tags.length > 0 && (
+        <p style="font-size: 0.9rem;">
+          <strong>标签:</strong> {post.data.tags.join(', ')}
+        </p>
+      )}
       <hr style="margin: 2rem 0;" />
-      <p>
-        <a href="/blog">← 返回博客列表</a> | 
-        <a href="/">返回首页</a>
-      </p>
-    </main>
-  </body>
-</html>`;
+      <Content />
+    </article>
+    
+    <hr style="margin: 2rem 0;" />
+    <p>
+      <a href="/blog">← 返回博客列表</a> | 
+      <a href="/">返回首页</a>
+    </p>
+  </Layout>
+) : (
+  <!-- 内置默认布局 -->
+  <html lang={config.language || 'zh-CN'}>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width" />
+      <title>{post.data.title} - {config.title}</title>
+      {post.data.description && <meta name="description" content={post.data.description} />}
+      {config.author && <meta name="author" content={config.author} />}
+      <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; }
+        h1 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; }
+        h2, h3 { color: #555; } a { color: #0066cc; text-decoration: none; }
+        a:hover { text-decoration: underline; } code { background: #f5f5f5; padding: 0.2rem; }
+        pre { background: #f8f8f8; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+        blockquote { border-left: 4px solid #ddd; margin: 0; padding-left: 1rem; color: #666; }
+      </style>
+    </head>
+    <body>
+      <main>
+        <article>
+          <h1>{post.data.title}</h1>
+          <p style="color: #666;">发布时间: {post.data.date.toLocaleDateString('zh-CN')}</p>
+          {post.data.tags.length > 0 && (
+            <p style="font-size: 0.9rem;">
+              <strong>标签:</strong> {post.data.tags.join(', ')}
+            </p>
+          )}
+          <hr style="margin: 2rem 0;" />
+          <Content />
+        </article>
+        
+        <hr style="margin: 2rem 0;" />
+        <p>
+          <a href="/blog">← 返回博客列表</a> | 
+          <a href="/">返回首页</a>
+        </p>
+      </main>
+    </body>
+  </html>
+)}`;
     writeFileSync(join(sitePath, 'src/pages/blog/[slug].astro'), postDetailPage, 'utf8');
 
     // Content Collection 配置 - 使用新的 Content Layer API

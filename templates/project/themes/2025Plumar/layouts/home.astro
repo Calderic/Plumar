@@ -1,0 +1,283 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+}
+
+const { title, description, image } = Astro.props;
+---
+
+<BaseLayout 
+  title={title} 
+  description={description}
+  image={image}
+  type="website"
+>
+  <Header slot="header" />
+  
+  <div class="home-content">
+    <!-- 主要内容区域 -->
+    <main class="home-main">
+      <slot />
+    </main>
+  </div>
+  
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .home-content {
+    padding: 1rem 0 2rem;
+  }
+  
+  .home-main {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  
+  /* 首页欢迎区域样式 */
+  :global(.welcome) {
+    text-align: center;
+    margin-bottom: 4rem;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, 
+      rgba(37, 99, 235, 0.05) 0%, 
+      rgba(14, 165, 233, 0.05) 50%,
+      rgba(37, 99, 235, 0.02) 100%
+    );
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  :global(.welcome::before) {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  }
+  
+  :global(.welcome h1) {
+    font-size: 3rem;
+    font-weight: 700;
+    margin: 0 0 1.5rem 0;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+  }
+  
+  :global(.welcome p) {
+    font-size: 1.25rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: 1.6;
+  }
+  
+  /* 功能介绍区域 */
+  :global(.getting-started) {
+    margin-bottom: 3rem;
+    padding: 2rem;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+  }
+  
+  :global(.getting-started h2) {
+    font-size: 1.75rem;
+    margin: 0 0 1.5rem 0;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  :global(.getting-started ul) {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 1rem;
+  }
+  
+  :global(.getting-started li) {
+    padding: 1rem 1.5rem;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    transition: all var(--animation-duration) var(--animation-easing);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  :global(.getting-started li::before) {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--color-primary), var(--color-accent));
+    opacity: 0;
+    transition: opacity var(--animation-duration) var(--animation-easing);
+  }
+  
+  :global(.getting-started li:hover) {
+    background-color: var(--color-surface-alt);
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  :global(.getting-started li:hover::before) {
+    opacity: 1;
+  }
+  
+  :global(.getting-started code) {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+  }
+  
+  /* 快速链接区域 */
+  :global(.quick-links) {
+    padding: 2rem;
+    background: linear-gradient(135deg, 
+      rgba(37, 99, 235, 0.02) 0%, 
+      rgba(14, 165, 233, 0.02) 100%
+    );
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+  }
+  
+  :global(.quick-links h2) {
+    font-size: 1.75rem;
+    margin: 0 0 1.5rem 0;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  :global(.quick-links ul) {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  
+  :global(.quick-links li) {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    transition: all var(--animation-duration) var(--animation-easing);
+    overflow: hidden;
+  }
+  
+  :global(.quick-links li:hover) {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  :global(.quick-links a) {
+    display: block;
+    padding: 1.25rem 1.5rem;
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1rem;
+    transition: all var(--animation-duration) var(--animation-easing);
+    position: relative;
+  }
+  
+  :global(.quick-links a::after) {
+    content: '→';
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: all var(--animation-duration) var(--animation-easing);
+  }
+  
+  :global(.quick-links a:hover) {
+    color: var(--color-primary-dark);
+    background-color: rgba(37, 99, 235, 0.05);
+    padding-right: 2.5rem;
+  }
+  
+  :global(.quick-links a:hover::after) {
+    opacity: 1;
+  }
+  
+  /* 响应式设计 */
+  @media (max-width: 768px) {
+    .home-content {
+      padding: 0.5rem 0 1.5rem;
+    }
+    
+    :global(.welcome) {
+      margin-bottom: 2.5rem;
+      padding: 2rem 1.5rem;
+    }
+    
+    :global(.welcome h1) {
+      font-size: 2.25rem;
+    }
+    
+    :global(.welcome p) {
+      font-size: 1.125rem;
+    }
+    
+    :global(.getting-started),
+    :global(.quick-links) {
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    :global(.getting-started h2),
+    :global(.quick-links h2) {
+      font-size: 1.5rem;
+    }
+    
+    :global(.quick-links ul) {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    :global(.welcome) {
+      padding: 1.5rem 1rem;
+    }
+    
+    :global(.welcome h1) {
+      font-size: 2rem;
+    }
+    
+    :global(.welcome p) {
+      font-size: 1rem;
+    }
+    
+    :global(.getting-started),
+    :global(.quick-links) {
+      padding: 1.25rem;
+    }
+  }
+</style> 

@@ -1,0 +1,250 @@
+---
+import { getPlumarConfig } from '../../../src/utils/config.js';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  type?: 'website' | 'article';
+  language?: string;
+}
+
+const { 
+  title, 
+  description, 
+  image, 
+  type = 'website',
+  language 
+} = Astro.props;
+
+const config = getPlumarConfig();
+const pageTitle = title ? `${title} - ${config.title}` : config.title;
+const pageDescription = description || config.description;
+const lang = language || config.language || 'zh-CN';
+
+// 构建完整的图片URL
+const imageUrl = image ? new URL(image, Astro.site).toString() : undefined;
+---
+
+<!DOCTYPE html>
+<html lang={lang} data-theme="auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    
+    <!-- 基础SEO -->
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    {config.author && <meta name="author" content={config.author} />}
+    {config.keywords && config.keywords.length > 0 && 
+      <meta name="keywords" content={config.keywords.join(', ')} />
+    }
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={Astro.url.toString()} />
+    {imageUrl && <meta property="og:image" content={imageUrl} />}
+    <meta property="og:site_name" content={config.title} />
+    <meta property="og:locale" content={lang.replace('-', '_')} />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
+    {imageUrl && <meta name="twitter:image" content={imageUrl} />}
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    
+    <!-- RSS Feed -->
+    <link rel="alternate" type="application/rss+xml" title={config.title} href="/rss.xml" />
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link 
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" 
+      rel="stylesheet" 
+    />
+    
+    <!-- 主题样式 -->
+    <link rel="stylesheet" href="/themes/2025Plumar/styles/base.css" />
+    <link rel="stylesheet" href="/themes/2025Plumar/styles/components.css" />
+    
+    <!-- 主题初始化脚本 (避免闪烁) -->
+    <script is:inline>
+      // 主题初始化 - 避免FOUC
+      (function() {
+        const getTheme = () => {
+          if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+            return localStorage.getItem('theme');
+          }
+          if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            return 'dark';
+          }
+          return 'light';
+        };
+        
+        const theme = getTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+  </head>
+  
+  <body>
+    <!-- 背景装饰 -->
+    <div class="bg-decorations">
+      <div class="bg-gradient-1"></div>
+      <div class="bg-gradient-2"></div>
+      <div class="bg-dots"></div>
+    </div>
+    
+    <div class="site-container">
+      <!-- 页头插槽 -->
+      <slot name="header" />
+      
+      <!-- 主内容区域 -->
+      <main class="site-main">
+        <div class="container">
+          <slot />
+        </div>
+      </main>
+      
+      <!-- 页脚插槽 -->
+      <slot name="footer" />
+      
+      <!-- 返回顶部按钮 -->
+      <button class="back-to-top" id="backToTop" aria-label="返回顶部">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 14L12 9L17 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    
+    <!-- 主题JavaScript -->
+    <script>
+      // 主题切换功能
+      function initTheme() {
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        
+        function updateTheme(theme) {
+          html.setAttribute('data-theme', theme);
+          localStorage.setItem('theme', theme);
+          
+          // 更新切换按钮图标
+          if (themeToggle) {
+            const icon = themeToggle.querySelector('.theme-toggle-icon');
+            if (icon) {
+              icon.innerHTML = theme === 'dark' 
+                ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" fill="none"/>'
+                : '<circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2"/>';
+            }
+          }
+        }
+        
+        if (themeToggle) {
+          themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            updateTheme(newTheme);
+          });
+        }
+        
+        // 初始化图标
+        updateTheme(html.getAttribute('data-theme') || 'light');
+      }
+      
+      // 返回顶部功能
+      function initBackToTop() {
+        const backToTop = document.getElementById('backToTop');
+        if (!backToTop) return;
+        
+        // 显示/隐藏按钮
+        function toggleVisibility() {
+          if (window.pageYOffset > 300) {
+            backToTop.classList.add('visible');
+          } else {
+            backToTop.classList.remove('visible');
+          }
+        }
+        
+        // 平滑滚动到顶部
+        function scrollToTop() {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        }
+        
+        window.addEventListener('scroll', toggleVisibility);
+        backToTop.addEventListener('click', scrollToTop);
+      }
+      
+      // 页头滚动效果
+      function initHeaderScroll() {
+        const header = document.querySelector('.site-header');
+        if (!header) return;
+        
+        let lastScrollY = window.pageYOffset;
+        
+        function updateHeader() {
+          const scrollY = window.pageYOffset;
+          
+          if (scrollY > 10) {
+            header.classList.add('scrolled');
+          } else {
+            header.classList.remove('scrolled');
+          }
+          
+          lastScrollY = scrollY;
+        }
+        
+        window.addEventListener('scroll', updateHeader, { passive: true });
+      }
+      
+      // 移动端导航
+      function initMobileNav() {
+        const toggle = document.getElementById('mobileNavToggle');
+        const nav = document.querySelector('.main-navigation');
+        
+        if (!toggle || !nav) return;
+        
+        toggle.addEventListener('click', () => {
+          nav.classList.toggle('mobile-open');
+          toggle.setAttribute('aria-expanded', 
+            nav.classList.contains('mobile-open') ? 'true' : 'false'
+          );
+        });
+        
+        // 点击外部关闭
+        document.addEventListener('click', (e) => {
+          if (!nav.contains(e.target) && !toggle.contains(e.target)) {
+            nav.classList.remove('mobile-open');
+            toggle.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+      
+      // 页面加载完成后初始化
+      document.addEventListener('DOMContentLoaded', () => {
+        initTheme();
+        initBackToTop();
+        initHeaderScroll();
+        initMobileNav();
+      });
+      
+      // 页面导航时重新初始化 (SPA模式)
+      document.addEventListener('astro:page-load', () => {
+        initTheme();
+        initBackToTop();
+        initHeaderScroll();
+        initMobileNav();
+      });
+    </script>
+  </body>
+</html> 

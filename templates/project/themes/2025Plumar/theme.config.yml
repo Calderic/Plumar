@@ -1,0 +1,133 @@
+# 2025Plumar 主题配置
+# 现代化蓝白风格设计
+
+# 现代化颜色系统 - 2025蓝色科技风
+colors:
+  # 主色调系统 - 现代蓝色渐变
+  primary: "#0066ff"
+  primary_light: "#3385ff"
+  primary_dark: "#0052cc"
+  primary_gradient: "linear-gradient(135deg, #0066ff 0%, #00a3ff 100%)"
+  
+  # 辅助色彩
+  secondary: "#6b7280"
+  accent: "#00a3ff"
+  accent_secondary: "#ff6b35"
+  
+  # 背景色系 - 纯净白色系统
+  background: "#ffffff"
+  surface: "#fafbfc"
+  surface_alt: "#f5f7fa"
+  surface_hover: "#eef2f7"
+  
+  # 文字色彩系统
+  text: "#1a202c"
+  text_secondary: "#4a5568"
+  text_muted: "#718096"
+  text_light: "#a0aec0"
+  
+  # 边框和分割线
+  border: "#e2e8f0"
+  border_light: "#edf2f7"
+  border_accent: "rgba(0, 102, 255, 0.2)"
+  
+  # 状态色
+  success: "#10b981"
+  warning: "#f59e0b"
+  error: "#ef4444"
+  
+  # 深色模式优化
+  dark:
+    background: "#0d1117"
+    surface: "#161b22"
+    surface_alt: "#21262d"
+    surface_hover: "#30363d"
+    text: "#f0f6fc"
+    text_secondary: "#c9d1d9"
+    text_muted: "#8b949e"
+    text_light: "#6e7681"
+    border: "#30363d"
+    border_light: "#21262d"
+    border_accent: "rgba(0, 163, 255, 0.3)"
+
+# 布局配置
+layout:
+  header_fixed: true
+  sidebar_enabled: false
+  max_width: "1200px"
+  container_padding: "2rem"
+  content_padding: "1.5rem"
+  
+# 字体配置
+typography:
+  font_family: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif"
+  heading_font: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+  mono_font: "'Fira Code', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace"
+  base_size: "16px"
+  line_height: 1.7
+  heading_weight: 600
+  
+# 动画系统
+animations:
+  enabled: true
+  duration_fast: "0.15s"
+  duration: "0.25s"
+  duration_slow: "0.35s"
+  easing: "cubic-bezier(0.4, 0, 0.2, 1)"
+  easing_bounce: "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
+  reduced_motion: true
+
+# 功能开关
+features:
+  dark_mode: true
+  search: true
+  comments: false
+  toc: true
+  back_to_top: true
+  code_copy: true
+  reading_time: true
+  smooth_scroll: true
+  page_progress: true
+
+# 代码高亮主题
+code:
+  theme_light: "github-light"
+  theme_dark: "github-dark"
+  line_numbers: true
+  copy_button: true
+
+# 导航配置
+navigation:
+  primary:
+    - name: "首页"
+      url: "/"
+      icon: "🏠"
+    - name: "博客"
+      url: "/blog"
+      icon: "📝"
+    - name: "标签"
+      url: "/tags"
+      icon: "🏷️"
+    - name: "关于"
+      url: "/about"
+      icon: "👤"
+
+# 社交链接
+social:
+  github: ""
+  twitter: ""
+  email: ""
+  rss: true
+
+# SEO 配置
+seo:
+  google_analytics: ""
+  google_site_verification: ""
+  baidu_analytics: ""
+
+# 性能优化
+performance:
+  lazy_loading: true
+  image_optimization: true
+  css_minification: true
+  js_minification: true 

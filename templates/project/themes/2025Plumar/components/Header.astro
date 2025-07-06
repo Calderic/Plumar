@@ -1,0 +1,309 @@
+---
+import { getPlumarConfig } from '../../../src/utils/config.js';
+import Navigation from './Navigation.astro';
+
+const config = getPlumarConfig();
+const currentPath = Astro.url.pathname;
+---
+
+<header class="site-header">
+  <div class="header-container">
+    <!-- 品牌区域 -->
+    <div class="header-brand">
+      <a href="/" class="site-title">{config.title}</a>
+      {config.subtitle && <p class="site-subtitle">{config.subtitle}</p>}
+    </div>
+    
+    <!-- 桌面端导航 -->
+    <Navigation currentPath={currentPath} />
+    
+    <!-- 页头操作区 -->
+    <div class="header-actions">
+      <!-- 搜索按钮 -->
+      <button class="search-trigger" id="searchTrigger" aria-label="搜索" title="搜索">
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+          <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      
+      <!-- 主题切换按钮 -->
+      <button class="theme-toggle" id="themeToggle" aria-label="切换主题" title="切换主题">
+        <div class="theme-toggle-container">
+          <svg class="theme-toggle-icon sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2" fill="none"/>
+            <g class="sun-rays">
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2"/>
+            </g>
+          </svg>
+          <svg class="theme-toggle-icon moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/>
+          </svg>
+        </div>
+      </button>
+      
+      <!-- 移动端菜单按钮 -->
+      <button 
+        class="mobile-nav-toggle" 
+        id="mobileNavToggle" 
+        aria-label="切换菜单" 
+        aria-expanded="false"
+        title="菜单"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- 搜索覆盖层 (可选功能) -->
+<div class="search-overlay" id="searchOverlay" style="display: none;">
+  <div class="search-container">
+    <div class="search-box">
+      <svg class="search-box-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input 
+        type="text" 
+        placeholder="搜索文章..." 
+        class="search-input"
+        id="searchInput"
+        autocomplete="off"
+      />
+      <button class="search-close" id="searchClose" aria-label="关闭搜索">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="search-results" id="searchResults">
+      <!-- 搜索结果将在这里显示 -->
+    </div>
+  </div>
+</div>
+
+<style>
+  /* 搜索覆盖层样式 */
+  .search-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  .search-container {
+    max-width: 600px;
+    margin: 4rem auto 0;
+    padding: 0 2rem;
+  }
+  
+  .search-box {
+    display: flex;
+    align-items: center;
+    background-color: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.5rem;
+    gap: 1rem;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .search-box:focus-within {
+    border-color: var(--color-primary);
+  }
+  
+  .search-box-icon {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+  
+  .search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 1.125rem;
+    color: var(--color-text);
+    font-family: var(--font-family);
+  }
+  
+  .search-input::placeholder {
+    color: var(--color-text-muted);
+  }
+  
+  .search-close {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    transition: all var(--animation-duration) var(--animation-easing);
+    flex-shrink: 0;
+  }
+  
+  .search-close:hover {
+    color: var(--color-primary);
+    background-color: var(--color-surface-alt);
+  }
+  
+  .search-results {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    margin-top: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .search-result-item {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    cursor: pointer;
+    transition: background-color var(--animation-duration) var(--animation-easing);
+  }
+  
+  .search-result-item:hover {
+    background-color: var(--color-surface-alt);
+  }
+  
+  .search-result-item:last-child {
+    border-bottom: none;
+  }
+  
+  .search-result-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 0.5rem 0;
+  }
+  
+  .search-result-excerpt {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: 1.5;
+  }
+  
+  .search-highlight {
+    background-color: rgba(37, 99, 235, 0.2);
+    color: var(--color-primary);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.1875rem;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  /* 移动端搜索调整 */
+  @media (max-width: 768px) {
+    .search-container {
+      margin: 2rem auto 0;
+      padding: 0 1rem;
+    }
+    
+    .search-box {
+      padding: 0.875rem 1.25rem;
+    }
+    
+    .search-input {
+      font-size: 1rem;
+    }
+  }
+</style>
+
+<script>
+  // 搜索功能 (简化版本，可以后续扩展)
+  function initSearch() {
+    const searchTrigger = document.getElementById('searchTrigger');
+    const searchOverlay = document.getElementById('searchOverlay');
+    const searchClose = document.getElementById('searchClose');
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    
+    if (!searchTrigger || !searchOverlay || !searchClose || !searchInput) return;
+    
+    // 打开搜索
+    function openSearch() {
+      searchOverlay.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => searchInput.focus(), 100);
+    }
+    
+    // 关闭搜索
+    function closeSearch() {
+      searchOverlay.style.display = 'none';
+      document.body.style.overflow = '';
+      searchInput.value = '';
+      searchResults.innerHTML = '';
+    }
+    
+    // 事件监听
+    searchTrigger.addEventListener('click', openSearch);
+    searchClose.addEventListener('click', closeSearch);
+    
+    // 点击覆盖层关闭
+    searchOverlay.addEventListener('click', (e) => {
+      if (e.target === searchOverlay) {
+        closeSearch();
+      }
+    });
+    
+    // ESC键关闭
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && searchOverlay.style.display === 'block') {
+        closeSearch();
+      }
+    });
+    
+    // 简单的搜索实现 (可以后续连接到真实的搜索API)
+    searchInput.addEventListener('input', debounce((e) => {
+      const query = e.target.value.trim();
+      if (query.length < 2) {
+        searchResults.innerHTML = '';
+        return;
+      }
+      
+      // 这里可以实现真实的搜索逻辑
+      // 目前显示一个占位符结果
+      searchResults.innerHTML = `
+        <div class="search-result-item">
+          <h3 class="search-result-title">搜索功能开发中...</h3>
+          <p class="search-result-excerpt">搜索关键词: "${query}"</p>
+        </div>
+      `;
+    }, 300));
+  }
+  
+  // 防抖函数
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+  
+  // 初始化搜索功能
+  document.addEventListener('DOMContentLoaded', initSearch);
+  document.addEventListener('astro:page-load', initSearch);
+</script> 

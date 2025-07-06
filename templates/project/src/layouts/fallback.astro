@@ -1,5 +1,5 @@
 ---
-const { title, description, language = 'zh-CN', pageType = 'default' } = Astro.props;
+const { title, description, language = 'zh-CN' } = Astro.props;
 import { getPlumarConfig } from '../utils/config.js';
 
 const config = getPlumarConfig();
@@ -16,29 +16,89 @@ const config = getPlumarConfig();
     <meta name="description" content={description} />
     {config.author && <meta name="author" content={config.author} />}
     <style>
-      /* 内置默认样式 */
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 2rem;
-        line-height: 1.6;
-        color: #333;
-        background: #fff;
+      /* 风格简约复古设计 */
+      * {
+        box-sizing: border-box;
       }
 
-      h1, h2, h3 {
-        color: #2c3e50;
-        margin-top: 2rem;
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 40px 20px;
+        line-height: 1.7;
+        color: #1d1d1f;
+        background: #fafafa;
+        font-size: 17px;
+        font-weight: 400;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 60px;
+        padding-bottom: 40px;
+        border-bottom: 1px solid #d2d2d7;
       }
 
       h1 {
-        border-bottom: 2px solid #3498db;
-        padding-bottom: 0.5rem;
+        font-size: 32px;
+        font-weight: 600;
+        color: #1d1d1f;
+        margin: 0 0 8px 0;
+        letter-spacing: -0.5px;
+      }
+
+      header p {
+        font-size: 19px;
+        color: #86868b;
+        margin: 0 0 24px 0;
+        font-weight: 400;
+      }
+
+      nav {
+        display: flex;
+        justify-content: center;
+        gap: 32px;
+      }
+
+      nav a {
+        color: #06c;
+        text-decoration: none;
+        font-weight: 400;
+        font-size: 17px;
+        transition: color 0.2s ease;
+      }
+
+      nav a:hover {
+        color: #0051d5;
+      }
+
+      main {
+        margin: 0 0 80px 0;
+      }
+
+      h2 {
+        font-size: 28px;
+        font-weight: 600;
+        color: #1d1d1f;
+        margin: 48px 0 16px 0;
+        letter-spacing: -0.3px;
+      }
+
+      h3 {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1d1d1f;
+        margin: 32px 0 12px 0;
+      }
+
+      p {
+        margin: 0 0 20px 0;
+        color: #1d1d1f;
       }
 
       a {
-        color: #3498db;
+        color: #06c;
         text-decoration: none;
       }
 
@@ -46,118 +106,88 @@ const config = getPlumarConfig();
         text-decoration: underline;
       }
 
-      .theme-notice {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        margin: 2rem 0;
+      code {
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+        background: #f5f5f7;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 15px;
+        color: #d73502;
+      }
+
+      pre {
+        background: #f5f5f7;
+        padding: 20px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 24px 0;
+      }
+
+      pre code {
+        background: none;
+        padding: 0;
+        color: #1d1d1f;
+      }
+
+      footer {
         text-align: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        padding-top: 40px;
+        border-top: 1px solid #d2d2d7;
+        color: #86868b;
+        font-size: 15px;
       }
 
-      .theme-notice h3 {
-        margin-top: 0;
-        color: white;
-      }
-
-      .theme-notice code {
-        background: rgba(255,255,255,0.2);
-        padding: 0.3rem 0.6rem;
-        border-radius: 5px;
-        font-size: 0.9rem;
-      }
-
-      .fallback-header {
-        text-align: center;
-        padding: 2rem 0;
-        border-bottom: 1px solid #eee;
-        margin-bottom: 2rem;
-      }
-
-      .fallback-footer {
-        text-align: center;
-        padding: 2rem 0;
-        border-top: 1px solid #eee;
-        margin-top: 2rem;
-        color: #666;
-        font-size: 0.9rem;
-      }
-
-      .nav-links {
-        margin: 1rem 0;
-      }
-
-      .nav-links a {
-        margin: 0 1rem;
-        padding: 0.5rem 1rem;
-        background: #f8f9fa;
-        border-radius: 5px;
-        display: inline-block;
-        margin-bottom: 0.5rem;
-      }
-
-      .nav-links a:hover {
-        background: #e9ecef;
-        text-decoration: none;
-      }
-
-      /* 针对不同页面类型的样式 */
-      .page-type-home .theme-notice {
-        background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
-      }
-
-      .page-type-blog .theme-notice {
-        background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
-      }
-
-      .page-type-post .theme-notice {
-        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-        color: #333;
+      footer p {
+        margin: 8px 0;
+        color: #86868b;
       }
 
       /* 响应式设计 */
       @media (max-width: 768px) {
         body {
-          padding: 1rem;
+          padding: 32px 16px;
+          font-size: 16px;
         }
 
-        .nav-links a {
-          display: block;
-          margin: 0.5rem 0;
+        h1 {
+          font-size: 28px;
+        }
+
+        h2 {
+          font-size: 24px;
+        }
+
+        header p {
+          font-size: 17px;
+        }
+
+        nav {
+          gap: 24px;
+        }
+
+        header {
+          margin-bottom: 48px;
+          padding-bottom: 32px;
         }
       }
     </style>
   </head>
-  <body class={`page-type-${pageType}`}>
-    <header class="fallback-header">
+  <body>
+    <header>
       <h1>{config.title}</h1>
       <p>{config.description}</p>
-      <nav class="nav-links">
+      <nav>
         <a href="/">首页</a>
         <a href="/blog">博客</a>
       </nav>
     </header>
 
-    <div class="theme-notice">
-      <h3>🎨 欢迎使用 Plumar</h3>
-      <p>当前正在使用内置默认样式，您可以通过以下步骤自定义主题：</p>
-      <div style="margin: 1rem 0;">
-        <p>1️⃣ 创建主题: <code>plumar theme create my-theme</code></p>
-        <p>2️⃣ 应用主题: <code>plumar theme set my-theme</code></p>
-        <p>3️⃣ 重启服务器查看效果</p>
-      </div>
-      <p><small>或者查看 <a href="https://github.com/plumar/plumar" style="color: #ffd700;">文档</a> 了解更多主题制作方法</small></p>
-    </div>
-
     <main>
       <slot />
     </main>
 
-    <footer class="fallback-footer">
-      <p>🚀 Powered by <strong>Plumar</strong> & <strong>Astro v{Astro.generator.split(' ')[1]}</strong></p>
-      <p>当前主题: <strong>{config.theme || '内置默认样式'}</strong></p>
-      <p><small>页面类型: {pageType} | 语言: {language}</small></p>
+    <footer>
+      <p>由 Plumar 强力驱动</p>
     </footer>
   </body>
 </html> 

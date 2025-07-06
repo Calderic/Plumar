@@ -1,0 +1,63 @@
+---
+interface Props {
+  currentPath: string;
+}
+
+const { currentPath } = Astro.props;
+
+// 导航菜单项
+const navItems = [
+  { name: '首页', url: '/', icon: '🏠' },
+  { name: '博客', url: '/blog', icon: '📝' },
+  { name: '标签', url: '/tags', icon: '🏷️' },
+  { name: '关于', url: '/about', icon: '👤' }
+];
+
+// 判断当前页面是否为活跃状态
+function isActive(itemUrl: string, currentPath: string): boolean {
+  if (itemUrl === '/') {
+    return currentPath === '/';
+  }
+  return currentPath.startsWith(itemUrl);
+}
+---
+
+<nav class="main-navigation">
+  <ul class="nav-list">
+    {navItems.map((item) => (
+      <li class="nav-item">
+        <a 
+          href={item.url} 
+          class={`nav-link ${isActive(item.url, currentPath) ? 'active' : ''}`}
+          aria-current={isActive(item.url, currentPath) ? 'page' : undefined}
+        >
+          <span class="nav-icon" aria-hidden="true">{item.icon}</span>
+          <span class="nav-text">{item.name}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<style>
+  /* 导航图标样式 */
+  .nav-icon {
+    font-size: 1rem;
+    line-height: 1;
+  }
+  
+  .nav-text {
+    font-size: 0.875rem;
+  }
+  
+  /* 移动端隐藏图标 */
+  @media (max-width: 480px) {
+    .nav-icon {
+      display: none;
+    }
+    
+    .nav-link {
+      gap: 0;
+    }
+  }
+</style> 

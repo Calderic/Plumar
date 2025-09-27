@@ -2,6 +2,8 @@ import { ConfigManager } from '../core/config.js';
 import { readdirSync, statSync, readFileSync, existsSync } from 'fs';
 import { join, extname } from 'path';
 import { parseArgs } from '../core/utils.js';
+import { PlumarError } from '../core/plumar-error.js';
+import { ERROR_CODES } from '../constants.js';
 
 export class StatsCommand {
   async execute(args) {
@@ -9,9 +11,7 @@ export class StatsCommand {
     
     // 检查是否在站点目录中
     if (!this.isInSiteDirectory()) {
-      console.error('❌ 请在 Plumar 站点目录中运行此命令');
-      console.log('💡 提示: 使用 `plumar init <site-name>` 创建新站点');
-      return;
+      throw PlumarError.siteNotFound(process.cwd());
     }
     
     try {
@@ -28,7 +28,19 @@ export class StatsCommand {
       this.displayStats(posts, parsed.flags.detail || parsed.flags.d);
       
     } catch (error) {
-      console.error(`❌ 获取统计信息失败: ${error.message}`);
+      if (error instanceof PlumarError) {
+        throw error;
+      }
+      throw new PlumarError(
+        `获取统计信息失败: ${error.message}`,
+        ERROR_CODES.FILE_READ_FAILED,
+        [
+          '检查内容目录是否存在并包含有效的 Markdown 文件',
+          '确认 Front Matter 中的日期格式有效',
+          '必要时运行 `plumar new` 创建示例文章'
+        ],
+        error
+      );
     }
   }
 

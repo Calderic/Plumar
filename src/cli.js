@@ -7,6 +7,8 @@ import { StatsCommand } from './commands/stats.js';
 import { ServerCommand } from './commands/server.js';
 import { BuildCommand } from './commands/build.js';
 import { ThemeCommand } from './commands/theme.js';
+import { ErrorHandler } from './core/error-handler.js';
+import { PlumarError } from './core/plumar-error.js';
 
 export class CLI {
   constructor(version) {
@@ -39,16 +41,20 @@ export class CLI {
     const command = this.commands.get(commandName);
 
     if (!command) {
-      console.error(`❌ 未知命令: ${commandName}`);
-      this.showHelp();
-      process.exit(1);
+      ErrorHandler.handle(
+        PlumarError.argumentError(`未知命令: ${commandName}`, commandName)
+      );
+      return;
     }
 
     try {
-      await command.execute(args.slice(1));
+      await ErrorHandler.safeExecute(
+        () => command.execute(args.slice(1)),
+        `${commandName} 命令`,
+        true
+      );
     } catch (error) {
-      console.error(`❌ 执行命令时出错: ${error.message}`);
-      process.exit(1);
+      ErrorHandler.handle(error);
     }
   }
 

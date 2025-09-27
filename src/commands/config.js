@@ -1,5 +1,6 @@
 import { ConfigManager } from '../core/config.js';
 import { parseArgs } from '../core/utils.js';
+import { PlumarError } from '../core/plumar-error.js';
 
 export class ConfigCommand {
   async execute(args) {
@@ -31,8 +32,8 @@ export class ConfigCommand {
   }
 
   async showConfig() {
+    const configManager = new ConfigManager();
     try {
-      const configManager = new ConfigManager();
       const config = await configManager.loadConfig();
       
       console.log('\n⚙️  当前配置:\n');
@@ -75,77 +76,83 @@ export class ConfigCommand {
       console.log('');
       
     } catch (error) {
-      console.error(`❌ 显示配置失败: ${error.message}`);
+      if (error instanceof PlumarError) {
+        throw error;
+      }
+      throw PlumarError.configError(error.message, configManager.configPath, error);
     }
   }
 
   async setConfig(path, value) {
     if (!path || value === undefined) {
-      console.error('❌ 请提供配置路径和值');
-      console.log('💡 用法: plumar config set <path> <value>');
-      console.log('    例如: plumar config set site.author "张三"');
-      return;
+      throw PlumarError.argumentError('请提供配置路径和值', path);
     }
 
+    const configManager = new ConfigManager();
+
     try {
-      const configManager = new ConfigManager();
-      
       // 处理不同类型的值
       let processedValue = value;
       if (value === 'true') processedValue = true;
       else if (value === 'false') processedValue = false;
-      else if (value.match(/^\d+$/)) processedValue = parseInt(value);
-      else if (value.match(/^\d+\.\d+$/)) processedValue = parseFloat(value);
+      else if (/^\d+$/.test(value)) processedValue = parseInt(value, 10);
+      else if (/^\d+\.\d+$/.test(value)) processedValue = parseFloat(value);
       else if (value.includes(',')) {
-        // 数组值
-        processedValue = value.split(',').map(item => item.trim());
+        processedValue = value.split(',').map(item => item.trim()).filter(Boolean);
       }
 
       await configManager.set(path, processedValue);
       console.log(`✅ 配置已更新: ${path} = ${JSON.stringify(processedValue)}`);
       
     } catch (error) {
-      console.error(`❌ 设置配置失败: ${error.message}`);
+      if (error instanceof PlumarError) {
+        throw error;
+      }
+      throw PlumarError.configError(error.message, configManager.configPath, error);
     }
   }
 
   async getConfig(path) {
     if (!path) {
-      console.error('❌ 请提供配置路径');
-      console.log('💡 用法: plumar config get <path>');
-      console.log('    例如: plumar config get site.author');
-      return;
+      throw PlumarError.argumentError('请提供配置路径', path);
     }
 
+    const configManager = new ConfigManager();
+
     try {
-      const configManager = new ConfigManager();
       const value = await configManager.get(path);
       
       if (value !== null) {
         console.log(`${path}: ${JSON.stringify(value, null, 2)}`);
       } else {
-        console.log(`❌ 配置项 "${path}" 不存在`);
+        throw PlumarError.configError(`配置项 "${path}" 不存在`, configManager.configPath);
       }
       
     } catch (error) {
-      console.error(`❌ 获取配置失败: ${error.message}`);
+      if (error instanceof PlumarError) {
+        throw error;
+      }
+      throw PlumarError.configError(error.message, configManager.configPath, error);
     }
   }
 
   async resetConfig() {
+    const configManager = new ConfigManager();
     try {
-      const configManager = new ConfigManager();
       configManager.saveConfig(configManager.defaultConfig);
       console.log('✅ 配置已重置为默认值');
       
     } catch (error) {
-      console.error(`❌ 重置配置失败: ${error.message}`);
+      if (error instanceof PlumarError) {
+        throw error;
+      }
+      throw PlumarError.configError(error.message, configManager.configPath, error);
     }
   }
 
   async initConfig() {
+    const configManager = new ConfigManager();
     try {
-      const configManager = new ConfigManager();
       const config = await configManager.loadConfig();
       
       // 生成初始配置文件
@@ -153,7 +160,10 @@ export class ConfigCommand {
       console.log('✅ 配置文件已初始化');
       
     } catch (error) {
-      console.error(`❌ 初始化配置失败: ${error.message}`);
+      if (error instanceof PlumarError) {
+        throw error;
+      }
+      throw PlumarError.configError(error.message, configManager.configPath, error);
     }
   }
 

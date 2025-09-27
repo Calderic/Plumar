@@ -1,6 +1,9 @@
 import { spawn } from 'child_process';
 import { existsSync } from 'fs';
+import { join } from 'path';
 import { parseArgs } from '../core/utils.js';
+import { PlumarError } from '../core/plumar-error.js';
+import { ERROR_CODES } from '../constants.js';
 
 export class BuildCommand {
   async execute(args) {
@@ -8,9 +11,7 @@ export class BuildCommand {
     
     // 检查是否在站点目录中
     if (!this.isInSiteDirectory()) {
-      console.error('❌ 请在 Plumar 站点目录中运行此命令');
-      console.log('💡 提示: 使用 `plumar init <site-name>` 创建新站点');
-      return;
+      throw PlumarError.siteNotFound(process.cwd());
     }
 
     console.log('🏗️  开始构建静态站点...');
@@ -26,9 +27,19 @@ export class BuildCommand {
       console.log('   - Cloudflare Pages: 连接仓库自动部署');
       
     } catch (error) {
-      console.error(`❌ 构建失败: ${error.message}`);
-      console.log('\n💡 请确保已安装依赖:');
-      console.log('   npm install');
+      if (error instanceof PlumarError) {
+        throw error;
+      }
+      throw new PlumarError(
+        `构建失败: ${error.message}`,
+        ERROR_CODES.UNKNOWN_ERROR,
+        [
+          '确认已执行 `npm install` 安装项目依赖',
+          '检查 Astro 配置文件是否存在语法错误',
+          '尝试先运行 `npm run dev` 确认项目可以启动'
+        ],
+        error
+      );
     }
   }
 
@@ -52,7 +63,13 @@ export class BuildCommand {
           if (code === 0) {
             this.runBuild(resolve, reject);
           } else {
-            reject(new Error('依赖安装失败'));
+            reject(
+              PlumarError.fileOperationError(
+                '安装依赖',
+                join(process.cwd(), 'package.json'),
+                new Error('npm install 失败')
+              )
+            );
           }
         });
       } else {
@@ -68,14 +85,39 @@ export class BuildCommand {
     });
 
     buildProcess.on('error', (error) => {
-      reject(error);
+      if (error instanceof PlumarError) {
+        reject(error);
+      } else {
+        reject(
+          new PlumarError(
+            `Astro 构建失败: ${error.message}`,
+            ERROR_CODES.UNKNOWN_ERROR,
+            [
+              '检查 Astro 配置和内容文件是否存在语法错误',
+              '确保 Node.js 版本满足 Astro 要求',
+              '必要时删除 dist/ 和 .astro/ 目录后重试'
+            ],
+            error
+          )
+        );
+      }
     });
 
     buildProcess.on('close', (code) => {
       if (code === 0) {
         resolve();
       } else {
-        reject(new Error(`构建进程退出，代码: ${code}`));
+        reject(
+          new PlumarError(
+            `Astro 构建进程退出，代码: ${code}`,
+            ERROR_CODES.UNKNOWN_ERROR,
+            [
+              '查看终端输出的错误日志',
+              '确认主题和组件文件编译通过',
+              '确保内容 Front Matter 填写完整'
+            ]
+          )
+        );
       }
     });
   }

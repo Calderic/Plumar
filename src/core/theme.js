@@ -1,5 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
+import { parseYAML } from './yaml-parser.js';
+import { PlumarError } from './plumar-error.js';
 
 export class ThemeManager {
   constructor(config) {
@@ -68,11 +70,18 @@ export class ThemeManager {
 
     try {
       const yamlContent = readFileSync(infoPath, 'utf8');
-      const themeInfo = this.parseYAML(yamlContent);
+      const themeInfo = parseYAML(yamlContent, {
+        filePath: infoPath,
+        context: '主题信息'
+      });
       this.themeCache.set(cacheKey, themeInfo);
       return themeInfo;
     } catch (error) {
-      console.warn(`⚠️  读取主题信息失败: ${error.message}`);
+      if (error instanceof PlumarError) {
+        console.warn(`⚠️  主题信息解析失败: ${error.message}`);
+      } else {
+        console.warn(`⚠️  读取主题信息失败: ${error.message}`);
+      }
       return { name: themeName };
     }
   }
@@ -98,14 +107,21 @@ export class ThemeManager {
         try {
           if (configPath.endsWith('.yml')) {
             const yamlContent = readFileSync(configPath, 'utf8');
-            themeConfig = this.parseYAML(yamlContent);
+            themeConfig = parseYAML(yamlContent, {
+              filePath: configPath,
+              context: '主题配置'
+            });
           } else {
             // 对于 JS/MJS 配置文件，我们暂时跳过，后续可以扩展
             console.log(`💡 检测到 JS 配置文件，暂不支持: ${configPath}`);
           }
           break;
         } catch (error) {
-          console.warn(`⚠️  读取主题配置失败: ${error.message}`);
+          if (error instanceof PlumarError) {
+            console.warn(`⚠️  主题配置解析失败: ${error.message}`);
+          } else {
+            console.warn(`⚠️  读取主题配置失败: ${error.message}`);
+          }
         }
       }
     }
@@ -203,82 +219,8 @@ export class ThemeManager {
     return styles;
   }
 
-
-
-  // 简单的 YAML 解析器（重用之前的实现）
-  parseYAML(yamlContent) {
-    const lines = yamlContent.split('\n');
-    const result = {};
-    let currentObj = result;
-    const stack = [result];
-    let currentIndent = 0;
-
-    for (let line of lines) {
-      line = line.replace(/\s*#.*$/, ''); // 移除注释
-      if (!line.trim()) continue;
-
-      const indent = line.length - line.trimLeft().length;
-      const trimmed = line.trim();
-
-      // 处理层级变化
-      if (indent < currentIndent) {
-        while (stack.length > 1 && indent < currentIndent) {
-          stack.pop();
-          currentIndent -= 2;
-        }
-        currentObj = stack[stack.length - 1];
-        currentIndent = indent;
-      }
-
-      if (trimmed.endsWith(':')) {
-        // 对象键
-        const key = trimmed.slice(0, -1);
-
-        if (indent > currentIndent) {
-          // 进入新层级
-          const newObj = {};
-          currentObj[key] = newObj;
-          stack.push(newObj);
-          currentObj = newObj;
-          currentIndent = indent;
-        } else {
-          // 同层级新对象
-          currentObj[key] = {};
-          stack.push(currentObj[key]);
-          currentObj = currentObj[key];
-        }
-      } else if (trimmed.includes(':')) {
-        // 键值对
-        const [key, ...valueParts] = trimmed.split(':');
-        let value = valueParts.join(':').trim();
-
-        // 处理不同类型的值
-        if (value === 'true') value = true;
-        else if (value === 'false') value = false;
-        else if (value === 'null') value = null;
-        else if (value.match(/^\d+$/)) value = parseInt(value);
-        else if (value.match(/^\d+\.\d+$/)) value = parseFloat(value);
-        else if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
-        else if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
-        else if (value === '[]') value = [];
-        else if (value === '{}') value = {};
-
-        currentObj[key.trim()] = value;
-      } else if (trimmed.startsWith('-')) {
-        // 数组项处理
-        const value = trimmed.slice(1).trim();
-        const parentKey = Object.keys(currentObj).pop();
-        if (parentKey && Array.isArray(currentObj[parentKey])) {
-          currentObj[parentKey].push(value.replace(/^["']|["']$/g, ''));
-        }
-      }
-    }
-
-    return result;
-  }
-
   // 清除缓存
   clearCache() {
     this.themeCache.clear();
   }
-} 
+}

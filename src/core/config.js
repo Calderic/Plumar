@@ -1,5 +1,8 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { parseYAML, stringifyYAML } from './yaml-parser.js';
+import { PlumarError } from './plumar-error.js';
+import { CONFIG_SCHEMA } from '../constants.js';
 
 export class ConfigManager {
   constructor() {
@@ -53,17 +56,25 @@ export class ConfigManager {
     try {
       if (existsSync(this.configPath)) {
         const yamlContent = readFileSync(this.configPath, 'utf8');
-        const userConfig = this.parseYAML(yamlContent);
-        return this.mergeConfig(this.defaultConfig, userConfig);
+        const userConfig = parseYAML(yamlContent, {
+          filePath: this.configPath,
+          context: '配置文件'
+        });
+        const merged = this.mergeConfig(this.defaultConfig, userConfig);
+        return this.applySchema(merged);
       }
     } catch (error) {
-      console.warn(`⚠️  配置文件加载失败，使用默认配置: ${error.message}`);
+      if (error instanceof PlumarError) {
+        throw error;
+      }
+      throw PlumarError.configError(error.message, this.configPath, error);
     }
-    return this.defaultConfig;
+    return this.applySchema({ ...this.defaultConfig });
   }
 
   saveConfig(config) {
-    const yamlContent = this.stringifyYAML(config);
+    const schemaApplied = this.applySchema(config);
+    const yamlContent = stringifyYAML(schemaApplied);
     writeFileSync(this.configPath, yamlContent, 'utf8');
     console.log('✅ 配置已保存到 plumar.config.yml');
   }
@@ -85,89 +96,75 @@ export class ConfigManager {
     return target;
   }
 
-  parseYAML(yamlContent) {
-    // 简单的 YAML 解析器
-    const lines = yamlContent.split('\n');
-    const result = {};
-    let currentObj = result;
-    const stack = [result];
-    let currentIndent = 0;
+  applySchema(config) {
+    const result = JSON.parse(JSON.stringify(config));
 
-    for (let line of lines) {
-      line = line.replace(/\s*#.*$/, ''); // 移除注释
-      if (!line.trim()) continue;
-
-      const indent = line.length - line.trimLeft().length;
-      const trimmed = line.trim();
-
-      if (trimmed.endsWith(':')) {
-        // 对象键
-        const key = trimmed.slice(0, -1);
-        
-        if (indent > currentIndent) {
-          // 进入新层级
-          const newObj = {};
-          currentObj[key] = newObj;
-          stack.push(newObj);
-          currentObj = newObj;
-        } else if (indent < currentIndent) {
-          // 回到上层级
-          while (stack.length > 1 && indent < currentIndent) {
-            stack.pop();
-            currentIndent -= 2;
-          }
-          currentObj = stack[stack.length - 1];
-          currentObj[key] = {};
-          stack.push(currentObj[key]);
-          currentObj = currentObj[key];
-        } else {
-          // 同层级
-          currentObj[key] = {};
-          stack.push(currentObj[key]);
-          currentObj = currentObj[key];
+    if (CONFIG_SCHEMA?.defaults) {
+      for (const [key, value] of Object.entries(CONFIG_SCHEMA.defaults)) {
+        if (result[key] === undefined || result[key] === null || result[key] === '') {
+          result[key] = value;
         }
-        currentIndent = indent;
-      } else if (trimmed.includes(':')) {
-        // 键值对
-        const [key, ...valueParts] = trimmed.split(':');
-        let value = valueParts.join(':').trim();
-        
-        // 处理不同类型的值
-        if (value === 'true') value = true;
-        else if (value === 'false') value = false;
-        else if (value === 'null') value = null;
-        else if (value.match(/^\d+$/)) value = parseInt(value);
-        else if (value.match(/^\d+\.\d+$/)) value = parseFloat(value);
-        else if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
-        else if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
-        
-        currentObj[key.trim()] = value;
+      }
+    }
+
+    if (CONFIG_SCHEMA?.required) {
+      const missing = CONFIG_SCHEMA.required.filter(key =>
+        result[key] === undefined || result[key] === null || result[key] === ''
+      );
+
+      if (missing.length > 0) {
+        throw PlumarError.configError(
+          `缺少必需配置项: ${missing.join(', ')}`,
+          this.configPath
+        );
+      }
+    }
+
+    if (CONFIG_SCHEMA?.types) {
+      for (const [key, expectedType] of Object.entries(CONFIG_SCHEMA.types)) {
+        if (result[key] === undefined || result[key] === null) {
+          continue;
+        }
+
+        result[key] = this.coerceType(result[key], expectedType, key);
       }
     }
 
     return result;
   }
 
-  stringifyYAML(obj, indent = 0) {
-    let result = '';
-    const spaces = '  '.repeat(indent);
-
-    for (const [key, value] of Object.entries(obj)) {
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
-        result += `${spaces}${key}:\n`;
-        result += this.stringifyYAML(value, indent + 1);
-      } else if (Array.isArray(value)) {
-        result += `${spaces}${key}:\n`;
-        for (const item of value) {
-          result += `${spaces}  - ${item}\n`;
+  coerceType(value, expectedType, key) {
+    switch (expectedType) {
+      case 'string':
+        if (typeof value === 'string') return value;
+        return String(value);
+      case 'number': {
+        if (typeof value === 'number' && !Number.isNaN(value)) {
+          return value;
         }
-      } else {
-        const valueStr = typeof value === 'string' ? `"${value}"` : value;
-        result += `${spaces}${key}: ${valueStr}\n`;
+        const parsed = Number(value);
+        if (!Number.isNaN(parsed)) {
+          return parsed;
+        }
+        throw PlumarError.configError(
+          `配置项 "${key}" 需要数值类型，但当前值为 ${value}`,
+          this.configPath
+        );
       }
+      case 'boolean': {
+        if (typeof value === 'boolean') return value;
+        if (typeof value === 'string') {
+          if (value.toLowerCase() === 'true') return true;
+          if (value.toLowerCase() === 'false') return false;
+        }
+        throw PlumarError.configError(
+          `配置项 "${key}" 需要布尔类型，但当前值为 ${value}`,
+          this.configPath
+        );
+      }
+      default:
+        return value;
     }
-
-    return result;
   }
 
   showConfig() {

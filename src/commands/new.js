@@ -2,6 +2,8 @@ import { ConfigManager } from '../core/config.js';
 import { PostGenerator } from '../core/generator.js';
 import { parseArgs } from '../core/utils.js';
 import { existsSync } from 'fs';
+import { PlumarError } from '../core/plumar-error.js';
+import { ERROR_CODES } from '../constants.js';
 
 export class NewCommand {
   async execute(args) {
@@ -9,9 +11,7 @@ export class NewCommand {
     
     // 检查是否在站点目录中
     if (!this.isInSiteDirectory()) {
-      console.error('❌ 请在 Plumar 站点目录中运行此命令');
-      console.log('💡 提示: 使用 `plumar init <site-name>` 创建新站点');
-      return;
+      throw PlumarError.siteNotFound(process.cwd());
     }
     
     if (parsed._.length === 0) {
@@ -67,7 +67,19 @@ export class NewCommand {
       console.log(`🔗 Slug: ${result.slug}`);
       
     } catch (error) {
-      console.error(`❌ 创建失败: ${error.message}`);
+      if (error instanceof PlumarError) {
+        throw error;
+      }
+      throw new PlumarError(
+        `创建${type === 'post' ? '文章' : type === 'page' ? '页面' : '草稿'}失败: ${error.message}`,
+        ERROR_CODES.FILE_WRITE_FAILED,
+        [
+          '确认 templates 目录中存在对应的模板文件',
+          '检查内容目录是否具有写入权限',
+          '若文件已存在，请更换标题或清理重复文件'
+        ],
+        error
+      );
     }
   }
 

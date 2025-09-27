@@ -2,6 +2,8 @@ import { ConfigManager } from '../core/config.js';
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, extname } from 'path';
 import { parseArgs } from '../core/utils.js';
+import { PlumarError } from '../core/plumar-error.js';
+import { ERROR_CODES } from '../constants.js';
 
 export class PublishCommand {
   async execute(args) {
@@ -9,9 +11,7 @@ export class PublishCommand {
     
     // 检查是否在站点目录中
     if (!this.isInSiteDirectory()) {
-      console.error('❌ 请在 Plumar 站点目录中运行此命令');
-      console.log('💡 提示: 使用 `plumar init <site-name>` 创建新站点');
-      return;
+      throw PlumarError.siteNotFound(process.cwd());
     }
     
     if (parsed._.length === 0) {
@@ -30,16 +30,34 @@ export class PublishCommand {
       const draftFile = this.findDraftByTitle(contentDir, title);
       
       if (!draftFile) {
-        console.error(`❌ 未找到标题为 "${title}" 的草稿`);
-        this.listDrafts(contentDir);
-        return;
+        throw new PlumarError(
+          `未找到标题为 "${title}" 的草稿`,
+          ERROR_CODES.FILE_NOT_FOUND,
+          [
+            '使用 `plumar list --type draft` 查看草稿列表',
+            '确认草稿标题与命令输入完全一致',
+            '草稿文件位于内容目录且 draft: true'
+          ]
+        );
       }
 
       this.publishDraft(draftFile);
       console.log(`✅ 草稿 "${title}" 已发布！`);
       
     } catch (error) {
-      console.error(`❌ 发布失败: ${error.message}`);
+      if (error instanceof PlumarError) {
+        throw error;
+      }
+      throw new PlumarError(
+        `发布草稿失败: ${error.message}`,
+        ERROR_CODES.FILE_OPERATION_ERROR,
+        [
+          '确认草稿文件未被占用',
+          '检查内容目录权限是否足够写入',
+          '若重复执行，可先手动修改 draft 字段'
+        ],
+        error
+      );
     }
   }
 
@@ -100,38 +118,6 @@ export class PublishCommand {
     }
     
     return data;
-  }
-
-  listDrafts(contentDir) {
-    console.log('\n📝 可用的草稿:');
-    
-    try {
-      const files = readdirSync(contentDir);
-      const drafts = [];
-      
-      for (const file of files) {
-        if (extname(file) !== '.md') continue;
-        
-        const filePath = join(contentDir, file);
-        const content = readFileSync(filePath, 'utf8');
-        const frontMatter = this.parseFrontMatter(content);
-        
-        if (frontMatter.draft) {
-          drafts.push(frontMatter.title || file);
-        }
-      }
-      
-      if (drafts.length === 0) {
-        console.log('   (暂无草稿)');
-      } else {
-        drafts.forEach(title => console.log(`   - ${title}`));
-      }
-      
-    } catch (error) {
-      console.log('   (无法读取草稿列表)');
-    }
-    
-    console.log('');
   }
 
   isInSiteDirectory() {

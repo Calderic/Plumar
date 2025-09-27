@@ -61,3 +61,5 @@ plumar.config.js
 # Generated content (for testing)
 src/content/blog/
 
+.kiro
+

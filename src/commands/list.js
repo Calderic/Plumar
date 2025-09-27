@@ -2,6 +2,8 @@ import { ConfigManager } from '../core/config.js';
 import { readdirSync, statSync, readFileSync, existsSync } from 'fs';
 import { join, extname } from 'path';
 import { parseArgs } from '../core/utils.js';
+import { PlumarError } from '../core/plumar-error.js';
+import { ERROR_CODES } from '../constants.js';
 
 export class ListCommand {
   async execute(args) {
@@ -9,9 +11,7 @@ export class ListCommand {
     
     // 检查是否在站点目录中
     if (!this.isInSiteDirectory()) {
-      console.error('❌ 请在 Plumar 站点目录中运行此命令');
-      console.log('💡 提示: 使用 `plumar init <site-name>` 创建新站点');
-      return;
+      throw PlumarError.siteNotFound(process.cwd());
     }
     
     try {
@@ -50,7 +50,19 @@ export class ListCommand {
       this.displayPosts(filteredPosts, parsed.flags.detail || parsed.flags.d);
       
     } catch (error) {
-      console.error(`❌ 列出文章失败: ${error.message}`);
+      if (error instanceof PlumarError) {
+        throw error;
+      }
+      throw new PlumarError(
+        `读取文章列表失败: ${error.message}`,
+        ERROR_CODES.FILE_READ_FAILED,
+        [
+          '检查内容目录是否存在且可读',
+          '确认文章文件的 Front Matter 格式正确',
+          '若刚初始化项目，请先创建文章'
+        ],
+        error
+      );
     }
   }
 
